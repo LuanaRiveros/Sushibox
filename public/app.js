@@ -85,6 +85,9 @@ function applyRole(role) {
 
 // ── NAVEGACION ─────────────────────────────────────────────────────────────────
 function navigate(panel) {
+  // Operativo no puede acceder al panel de administración
+  if (panel === 'admin' && currentRole !== 'admin') return;
+
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
@@ -327,24 +330,67 @@ function resetPriceForm() {
   document.getElementById('file-input').value = '';
 }
 
-// ── PANEL OPERATIVO: ORDEN DE COMPRA ──────────────────────────────────────────
+// ── PANEL OPERATIVO ────────────────────────────────────────────────────────────
 async function initOperativo() {
-  if (productsData.length > 0) {
-    renderProductCards(productsData);
-    return;
+  // Cargar productos e insumos en paralelo (insumos para vista read-only de precios)
+  const needsProducts = productsData.length === 0;
+  const needsInsumos  = insumosData.length  === 0;
+
+  const grid          = document.getElementById('product-grid');
+  const gridLoading   = document.getElementById('product-grid-loading');
+  const opLoading     = document.getElementById('op-insumos-loading');
+  const opWrap        = document.getElementById('op-insumos-table-wrap');
+
+  if (needsProducts) {
+    gridLoading.classList.remove('hidden');
+    grid.classList.add('hidden');
   }
-  const grid    = document.getElementById('product-grid');
-  const loading = document.getElementById('product-grid-loading');
-  loading.classList.remove('hidden');
-  grid.classList.add('hidden');
+  if (needsInsumos && opLoading) {
+    opLoading.classList.remove('hidden');
+    if (opWrap) opWrap.classList.add('hidden');
+  }
 
   try {
-    const data = await apiCall('GET', { action: 'getProducts' });
-    productsData = Array.isArray(data) ? data : [];
-    renderProductCards(productsData);
+    const fetches = [];
+    if (needsProducts) fetches.push(apiCall('GET', { action: 'getProducts' }).then(d => { productsData = Array.isArray(d) ? d : []; }));
+    if (needsInsumos)  fetches.push(apiCall('GET', { action: 'getInsumos'  }).then(d => { insumosData  = d || []; }));
+    await Promise.all(fetches);
   } catch (err) {
-    loading.innerHTML = `<span style="color:var(--orange)">Error al cargar productos: ${esc(err.message)}</span>`;
+    gridLoading.innerHTML = `<span style="color:var(--orange)">Error al cargar datos: ${esc(err.message)}</span>`;
   }
+
+  renderProductCards(productsData);
+  renderReadOnlyPricesTable(insumosData);
+}
+
+function renderReadOnlyPricesTable(rows) {
+  const loading = document.getElementById('op-insumos-loading');
+  const wrap    = document.getElementById('op-insumos-table-wrap');
+  const tbody   = document.getElementById('op-insumos-table-body');
+  if (!loading || !tbody) return;
+
+  loading.classList.add('hidden');
+  wrap.classList.remove('hidden');
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);text-align:center">Sin precios cargados en el sistema</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const dias  = daysSince(r.fechaUpdate);
+    const badge = dias === null ? 'badge-blue' : (dias > 30 ? 'badge-red' : (dias > 14 ? 'badge-orange' : 'badge-green'));
+    const label = dias === null ? 'Sin fecha'  : (dias > 30 ? 'Desactualizado' : (dias > 14 ? 'Actualizar pronto' : 'Vigente'));
+    return `<tr>
+      <td>${esc(r.nombre || r.nombreLista)}</td>
+      <td>${esc(r.idProveedor)}</td>
+      <td>${fmtARS(r.costoNeto)}</td>
+      <td>${fmtARS(r.costoConIVA)}</td>
+      <td style="font-weight:600">${fmtARS(r.costoReal)}</td>
+      <td>${esc(r.fechaUpdate)}</td>
+      <td><span class="badge ${badge}">${label}</span></td>
+    </tr>`;
+  }).join('');
 }
 
 function renderProductCards(products) {
