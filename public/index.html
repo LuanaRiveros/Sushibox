@@ -606,14 +606,14 @@
     <div class="login-sub">Sushibox · Stratio Consultora</div>
     <div class="login-roles">
       <div class="role-card" onclick="login('admin')">
-        <div class="rc-icon">👩‍💼</div>
+        <div class="rc-icon">🔐</div>
         <h3>Administrador</h3>
-        <p>Actualizar precios y ver dashboard</p>
+        <p>Cargar y actualizar lista de precios de insumos</p>
       </div>
       <div class="role-card" onclick="login('operativo')">
-        <div class="rc-icon">🧾</div>
+        <div class="rc-icon">📦</div>
         <h3>Operativo</h3>
-        <p>Generar ordenes de compra</p>
+        <p>Consultar precios, generar ordenes de compra y ver dashboard</p>
       </div>
     </div>
     <div class="login-foot">Sistema · Stratio</div>
@@ -647,11 +647,11 @@
   <div class="app-body">
     <nav class="sidebar">
       <div class="nav-section-title">Menu</div>
-      <div class="nav-item admin-only active" data-panel="admin" onclick="navigate('admin')">
+      <div class="nav-item admin-only" data-panel="admin" onclick="navigate('admin')">
         <span class="nav-icon">💲</span>Actualizar Precios
       </div>
       <div class="nav-item" data-panel="operativo" onclick="navigate('operativo')">
-        <span class="nav-icon">📦</span>Orden de Compra
+        <span class="nav-icon">📦</span>Operativo
       </div>
       <div class="nav-item" data-panel="dashboard" onclick="navigate('dashboard')">
         <span class="nav-icon">📈</span>Dashboard
@@ -663,11 +663,11 @@
 
     <main class="main-content">
 
-      <!-- PANEL ADMIN -->
-      <section id="panel-admin" class="panel active">
+      <!-- PANEL ADMIN (solo Administrador) -->
+      <section id="panel-admin" class="panel">
         <div class="panel-header">
-          <h2>Actualizar Precios</h2>
-          <p>Suba una factura o Excel del proveedor para detectar y actualizar precios automaticamente.</p>
+          <h2>Actualizar Precios <span class="badge badge-blue" style="font-size:.6rem;vertical-align:middle;margin-left:.5rem">Solo Admin</span></h2>
+          <p>Suba una factura o Excel del proveedor para detectar y actualizar precios en la planilla automaticamente.</p>
         </div>
         <div class="grid-2 section-gap">
           <div class="card">
@@ -732,9 +732,38 @@
       <!-- PANEL OPERATIVO -->
       <section id="panel-operativo" class="panel">
         <div class="panel-header">
-          <h2>Generador de Orden de Compra</h2>
-          <p>Selecciona los productos, ingresa las cantidades y genera la OC agrupada por proveedor.</p>
+          <h2>Panel Operativo</h2>
+          <p>Consulta los precios actuales, planifica la produccion y genera ordenes de compra por proveedor.</p>
         </div>
+
+        <!-- Precios actuales — solo lectura -->
+        <div class="card section-gap">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem">
+            <div class="card-title" style="margin:0">Precios Actuales — Consulta</div>
+            <span class="badge badge-blue" style="font-size:.65rem">Solo lectura</span>
+          </div>
+          <div id="op-insumos-loading" class="loading-row"><span class="spinner"></span> Cargando precios...</div>
+          <div id="op-insumos-table-wrap" class="hidden">
+            <div class="tbl-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Insumo</th>
+                    <th>Proveedor</th>
+                    <th>Precio Neto</th>
+                    <th>Precio c/IVA</th>
+                    <th>Costo Real</th>
+                    <th>Ultima Act.</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="op-insumos-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generador de OC -->
         <div class="card section-gap">
           <div class="card-title">Plan de Produccion</div>
           <div id="product-grid-loading" class="loading-row"><span class="spinner"></span> Cargando productos...</div>
@@ -744,6 +773,7 @@
             <button class="btn-ghost" onclick="clearPlan()">Limpiar</button>
           </div>
         </div>
+
         <div id="po-result-section" class="hidden">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem">
             <h3 style="font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700;color:var(--navy)">Orden de Compra Generada</h3>
